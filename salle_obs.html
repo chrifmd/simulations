@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Stroboscopie </title>
+<style>
+
+    body {
+        margin: 0;
+        background: #0a0f1f;
+        color: white;
+        font-family: Arial;
+        text-align: center;
+    }
+ canvas {
+        background: radial-gradient(circle at center, #1e3a5f, #000814);
+        di00play: block;
+        margin: auto;
+        border: 4px solid #898885;
+    }
+    
+
+	.controls {
+    position: absolute;   /* ou fixed si tu veux qu'ils restent visibles même en scrollant */
+    top: 150px;            /* distance depuis le haut */
+    right: 30px;          /* distance depuis la droite */
+    padding:20px;
+    background: rgba(0, 0, 0, 0.4); /* optionnel : petit fond pour les distinguer */
+    border-radius: 8px;   /* optionnel : coins arrondis */
+	
+}
+.text {
+    position: absolute;   /* ou fixed si tu veux qu'ils restent visibles même en scrollant */
+    top: 160px;            /* distance depuis le haut */
+    right: 60px;          /* distance depuis la droite */
+    padding: 20px;
+    background: rgba(0, 0, 0, 0.4); /* optionnel : petit fond pour les distinguer */
+    border-radius: 8px;   /* optionnel : coins arrondis */
+	
+}
+
+    
+
+    input {
+        width: 200px;
+    }
+</style>
+</head>
+<body>
+
+<h2>🔦 Stroboscopie (salle obscure)</h2>
+
+
+
+<canvas id="canvas" width="600" height="600"></canvas>
+<br>
+<div class="button-row">
+  <button id="Retour">Retour</button><br>
+  <br>
+    Simulation conçue par Mohamed Chérif - Menzel Témime - Tunisie. 
+            chrif.md@gmail.com
+  </div>
+  <br>
+  <div class="text">
+ <div style=color:#bcd6ff;font-size:13px"> Cliquer sur Stroboscope on/off; <br>
+
+	 	  </div>
+<div class="controls">
+<div class="button-row">
+  <button id="Stroboscope">Stroboscope:on/off</button>
+   
+  </div>
+  <br>
+    Fréquence source N(Hz):<br>
+    <input type="range" id="freq" min="1" max="20" value="5">
+    <span id="fval"></span> <br>
+<br>
+
+    Fréquence stroboscope Ne(Hz):<br>
+    <input type="range" id="strobe" min="0" max="20" value="0">
+    <span id="sval"></span>  <br>
+	 <br>
+     
+   
+</div>
+
+           
+        
+<script>
+document.getElementById("Stroboscope").addEventListener("click", function () {
+              window.location.href = "strob.html";
+            });
+			document.getElementById("Retour").addEventListener("click", function () {
+              window.location.href = "index.html";
+            });
+
+let time = 0;
+
+let freq = 5;
+let strobeFreq = 0;
+
+const speed = 100; // célérité (px/s)
+
+const freqSlider = document.getElementById("freq");
+const strobeSlider = document.getElementById("strobe");
+
+freqSlider.oninput = () => {
+    freq = +freqSlider.value;
+    document.getElementById("fval").textContent = freq;
+};
+
+strobeSlider.oninput = () => {
+    strobeFreq = +strobeSlider.value;
+    document.getElementById("sval").textContent = strobeFreq;
+};
+
+function drawWave(t) {
+    ctx.clearRect(0, 0, W, H);
+
+    let cx = W / 2;
+    let cy = H / 2;
+
+    let imageData = ctx.createImageData(W, H);
+    let data = imageData.data;
+
+    for (let y = 0; y < H; y++) {
+        for (let x = 0; x < W; x++) {
+
+            let dx = x - cx;
+            let dy = y - cy;
+            let r = Math.sqrt(dx*dx + dy*dy);
+
+            let k = 2 * Math.PI * freq / speed;
+            let omega = 2 * Math.PI * freq;
+
+            let wave = Math.sin(k * r - omega * t);
+
+            let intensity = (wave + 1) * 127;
+
+            let i = (y * W + x) * 4;
+
+            data[i] = 0;
+            data[i+1] = intensity;
+            data[i+2] = 255;
+            data[i+3] = 255;
+        }
+    }
+
+    ctx.putImageData(imageData, 0, 0);
+}
+
+function animate() {
+    requestAnimationFrame(animate);
+
+    let dt = 0.016;
+
+    if (strobeFreq > 0) {
+        let period = 1 / strobeFreq;
+        if (Math.floor(time / period) !== Math.floor((time + dt) / period)) {
+            drawWave(time);
+        }
+    } else {
+        drawWave(time);
+    }
+
+    time += dt;
+
+    let lambda = speed / freq;
+
+    document.getElementById("lambda").textContent = lambda.toFixed(1);
+    document.getElementById("speed").textContent = speed;
+}
+
+animate();
+</script>
+
+</body>
+</html>

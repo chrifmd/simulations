@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulation de la propagation d'une onde progressive sinusoïdale à la surface de l'eau .</title>
+	
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .layout {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            gap: 10px;
+            justify-items: center;
+			
+        }
+
+        .spacer {
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🌊Simulation de la propagation d'une onde progressive sinusoïdale à la surface de l'eau</h1>
+          <div  style="margin-top:10px;color:#bcd6ff;font-size:16px">Ecran d'une cuve à onde (un clic sur l'éran pour démarrer ou arrêter l'animation)</div>
+        </header>
+
+        <main class="layout">
+            <div class="spacer"></div>
+
+            <!-- Zone de simulation -->
+			
+
+            <div class="simulation-zone">
+                <div class="canvases">
+                    <div class="main-view">
+                        
+						 <div class="control-buttons">
+                    
+							
+			                        <canvas id="mainCanvas" width="600" height="600"></canvas>
+									<button id="playPauseBtn" class="control-btn primary">▶ Démarrer</button>
+	   <button id="resetBtn" class="control-btn secondary">🔄 Reset</button>
+	   <button id="stepBackBtn" class="control-btn step">⏪ Pas arrière</button>
+                    <button id="stepForwardBtn" class="control-btn step">⏩ Pas avant</button>
+                    </div>
+					
+			
+                    <div class="cross-section-view visible" id="crossSectionView">
+                       
+						
+                    
+                        <canvas id="crossSectionCanvas" width="600" height="200"></canvas>
+						<canvas id="diagramCanvas" width="600" height="170"> </canvas>
+           
+<div id="pointsLegend" style="display:none; margin-top:8px; text-align:center; font-size:0.9rem;">
+    <span style="color:#ff0000; font-weight:bold;">●</span> Crête &nbsp;
+    <span style="color:#0000ff; font-weight:bold;">●</span> Creux &nbsp;
+    <span style="color:#00aa00; font-weight:bold;">●</span> Amplitude nulle
+</div>
+                    </div>
+                </div>
+
+               
+					
+					  <div class="control-buttons">
+                    
+                </div>
+				
+                </div>
+            </div>
+
+            <!-- Curseurs à droite -->
+			<div class="main-layout">
+  <!-- === Panneau de paramètres à gauche === -->
+  <div class="controls-panel">
+    <!-- Bouton diagrammes en haut -->
+	 
+	<button id="view3DBtn" class="control-btn">👓 Vue 3D</button>
+	<button id="strobBtn" class="control-btn">🔦Stroboscopie</button><br>
+	
+
+	<script>
+  document.getElementById("view3DBtn").addEventListener("click", function() {
+    window.location.href = "index_3D.html";
+  });
+  document.getElementById("strobBtn").addEventListener("click", function() {
+    window.location.href = "salle_obs.html";
+  });
+</script>
+   <label for="startDirection">Début du mouvement:</label><br>
+    <select id="startDirection">
+        <option value="up">Vers le haut (crête)</option>
+        <option value="down">Vers le bas (creux)</option>
+    </select>
+	
+
+    <h3>Paramètres</h3>   
+    
+            <div class="control-sliders">
+                <div class="parameter-control">
+                    <label for="frequencySlider">Fréquence (Hz)</label>
+                    <input type="range" id="frequencySlider" min="5" max="50.0" step="1" value="20.0">
+					 </div>
+					 <div class="parameter-control">
+                    <span id="frequencyValue">20.0 Hz</span>
+                </div>
+
+                <div class="parameter-control">
+                    <label for="amplitudeSlider">Amplitude (mm)</label>
+                    <input type="range" id="amplitudeSlider" min="1" max="10" value="5" step="0.1">
+                    <span id="amplitudeValue">5.0 mm</span>
+                </div>
+
+                <div class="parameter-control">
+                    <label for="speedSlider">Vitesse d'animation</label>
+                    <input type="range" id="speedSlider" min="0.01" max="0.2" value="0.06" step="0.001">
+                    <span id="speedValue">- </span>
+                </div>
+				<div class="control-section">
+                    <h3>Paramètres calculés</h3>
+                    <div class="calculated-params">
+						<div class="control-buttons">
+                </div
+            </div>
+			<div class="param-display">
+                            <span class="param-label">chronmètre:</span>
+                          
+							<div id="chrono" style="font-weight:bold; font-size:16px; margin:5px;">
+  t = 0 ms
+</div>
+                        </div>
+				 <div class="param-display">
+                            <span class="param-label">Période (T):</span>
+                            <span id="periodValue">0.50 s</span><br>
+                        </div>
+
+                        <div class="param-display">
+                            <span class="param-label">Longueur d'onde (λ):</span>
+                            <span id="wavelengthValue"> 0.5cm</span><br>
+                        </div>
+
+                        <div class="param-display">
+                            <span class="param-label">Célérité (v):</span>
+                            <span id="velocity1Value">10.0 cm/s</span><br>
+                        </div>
+ <div class="parameter-control">
+ <button id="crossSectionBtn" class="control-btn tertiary">👁 Coupe transversale</button>
+  <button id="togglePointsBtn" class="control-btn">🔵 Afficher points</button>
+  <button id="toggleDiagramBtn">📊 Diagrammes de mouvement</button><br>
+    
+    <!-- Bloc masqué qui s'affiche quand on clique -->
+    <div id="traceControls">
+  <label style="color:purple;"><input type="checkbox" id="toggleSourceTrace" > Source</label>
+  </div>
+  <div id="traceControls">
+  <label style="color:red;"><input type="checkbox" id="toggleATrace" > Point A</label>
+  </div>
+  <div id="traceControls">
+  <label style="color:green;"><input type="checkbox" id="toggleBTrace" > Point B</label>
+</div>
+<div style="margin-top:8px;color:#bcd6ff;font-size:13px">Cliquer-glisser sur les points A et B de la surface de l'eau pour changer leur position </div>
+    </div>
+    
+
+                
+			
+        </main>
+	
+       
+       
+        
+					<div id="tooltipA" class="tooltip-point"></div>
+<div id="tooltipB" class="tooltip-point"></div>
+<div id="tooltip" style="
+    position:absolute;
+    padding:4px 8px;
+    background:rgba(63, 164,239, 0.8);
+    color:#fff;
+    border-radius:6px;
+    font-size:12px;
+    pointer-events:none;
+    display:none;
+    z-index:1000;
+"></div>
+
+					
+					
+		<footer>
+            <p>Simulation conçue par Mohamed Chérif - Menzel Témime - Tunisie. </p>
+            <p>chrif.md@gmail.com</p>
+        </footer>
+    </div>
+
+    <script src="script.js"></script>
+
+</body>
+</html>

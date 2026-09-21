@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+     /* --- Reset + layout --- */
+    *{box-sizing:border-box;margin:0;padding:0}
+    html,body{height:100%}
+    body{
+      font-family:Inter, "Segoe UI", Roboto, Arial;
+      background: linear-gradient(135deg,#0f172a 0%,#0b1220 60%);
+      color:#e6eef8;
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+    }
+	
+	.calculated-params {
+		display: flex;
+		flex-direction: column;
+		gap: 20px;
+	}
+
+	.param-display {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		padding: 8px 12px;
+		background: #f8f9fa;
+		border-radius: 6px;
+		border-left: 4px solid #3498db;
+	}
+	
+
+	.param-label {
+		font-weight: 600;
+		color: #2c3e50;
+	}
+
+	.param-display span:last-child {
+		font-weight: 700;
+		color: #3498db;
+	}
+    .app {
+      display:grid;
+      grid-template-columns: 1fr 360px;
+      gap:18px;
+      height:100vh;
+      padding:18px;
+    }
+
+    /* Left: canvases */
+    .canvas-area {
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      border-radius:12px;
+      padding:12px;
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+      align-items:center;
+      justify-content:flex-start;
+      box-shadow: 0 6px 30px rgba(2,6,23,0.6);
+    }
+
+    .row {
+      display:flex;
+      gap:12px;
+      width:100%;
+      justify-content:center;
+    }
+
+    canvas, #canvas3D {
+      background: linear-gradient(180deg,#e6f3ff 0%, #c6e0ff 100%);
+      border-radius:8px;
+      box-shadow: 0 8px 30px rgba(2,6,23,0.45);
+      border:2px solid rgba(255,255,255,0.06);
+    }
+
+   
+    #canvas3D { width:600px; height:600px; display:block }
+
+
+    /* Right: controls */
+    .controls {
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      border-radius:12px;
+      padding:16px;
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+      box-shadow: 0 6px 30px rgba(2,6,23,0.6);
+    }
+
+    h1 { font-size:18px; color:#dbeafe; margin-bottom:6px }
+    p.small { font-size:12px; color:#a9b8d6; margin-bottom:8px }
+
+    .button-row { display:flex; gap:8px; flex-wrap:wrap; }
+    button {
+      padding:10px 12px;
+      border-radius:8px;
+      border: none;
+      cursor:pointer;
+      font-weight:600;
+      background:#1f6feb;
+      color:white;
+      box-shadow: 0 4px 12px rgba(2,6,23,0.5);
+    }
+       
+
+    .slider-row { display:flex; align-items:center; gap:10px }
+    input[type="range"] { width:100% }
+
+    .param { display:flex; justify-content:space-between; color:#cfe1ff; font-weight:600; }
+
+    footer { font-size:12px; color:#93b0d9; margin-top:10px; text-align:center }
+
+    /* responsive */
+    @media (max-width:1000px) {
+      .app { grid-template-columns: 1fr; padding:10px; }
+     
+    }
+  </style>
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="canvas-area">
+      <h1> Simulation en 3D de la propagation d'une onde progressive à la surface de l'eau </h1>
+      <div class="row">
+        <canvas id="canvas3D" width="520" height="360"></canvas>
+      </div>
+    </div>
+
+    <div class="controls">
+      <div>
+        <div class="button-row">
+          <button id="playPauseBtn">▶ Démarrer</button>
+          <button id="resetBtn" class="ghost">🔄 Reset</button>
+          <button id="vue2D">Vue 2D</button>
+          <button id="toggleBuoy">Afficher la bouée</button>
+          <script>
+            document.getElementById("vue2D").addEventListener("click", function () {
+              window.location.href = "index.html";
+            });
+          </script>
+        </div>
+      </div>
+
+      <!-- sliders et paramètres conservés -->
+      <div class="calculated-params">
+        <div class="parameter-control">
+          <label for="frequencySlider">Fréquence (Hz)</label>
+          <input type="range" id="frequencySlider" min="5" max="50" step="1" value="20">
+          <span id="frequencyValue">20.0 Hz</span>
+        </div>
+        <div class="parameter-control">
+          <label for="amplitudeSlider">Amplitude (mm)</label>
+          <input type="range" id="amplitudeSlider" min="1" max="10" value="5" step="0.1">
+          <span id="amplitudeValue">5.0 mm</span>
+        </div>
+        <div class="parameter-control">
+          <label for="speedSlider">Vitesse d'animation</label>
+          <input type="range" id="speedSlider" min="0.01" max="0.2" value="0.06" step="0.001">
+          <span id="speedValue">-</span>
+        </div>
+      </div>
+
+      <div class="param-display">
+        <span class="param-label">Période (T):</span>
+        <span id="periodValue">0.50 s</span>
+      </div>
+      <div class="param-display">
+        <span class="param-label">Longueur d'onde (λ):</span>
+        <span id="wavelengthValue">0.5 cm</span>
+      </div>
+      <div class="param-display">
+        <span class="param-label">Célérité (v):</span>
+        <span id="velocityValue">10.0 cm/s</span>
+      </div>
+
+      <div style="margin-top:8px;color:#bcd6ff;font-size:13px">Contrôle 3D : glisser pour tourner, molette pour zoom, cliquer sur la bouée pour la déplacer
+	 
+	  </div>
+	   Simulation conçue par Mohamed Chérif - Menzel Témime - Tunisie. 
+            chrif.md@gmail.com
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/three@0.152.2/build/three.min.js"></script>
+  
+   
+  <script>
+  (function(){
+    function clamp(v,a,b){ return Math.max(a, Math.min(b, v)); }
+
+    class WaveSimulation {
+      constructor(){
+        this.canvas3D = document.getElementById('canvas3D');
+        this.playPauseBtn = document.getElementById('playPauseBtn');
+        this.resetBtn = document.getElementById('resetBtn');
+        this.freqSlider = document.getElementById('frequencySlider');
+        this.ampSlider = document.getElementById('amplitudeSlider');
+        this.speedSlider = document.getElementById('speedSlider');
+        this.freqVal = document.getElementById('frequencyValue');
+        this.ampVal = document.getElementById('amplitudeValue');
+        this.speedVal = document.getElementById('speedValue');
+        this.periodVal = document.getElementById('periodValue');
+        this.wavelengthVal = document.getElementById('wavelengthValue');
+
+        this.frequency = parseFloat(this.freqSlider.value);
+        this.amplitude = parseFloat(this.ampSlider.value);
+        this.animationSpeed = parseFloat(this.speedSlider.value);
+        this.velocity = 10;
+        this.wavelength = this.velocity / this.frequency;
+        this.period = 1 / this.frequency;
+		 this.velocityVisual = 1000; 
+		 //this.displayScale = 20; // Ajuste si tu veux zoomer plus ou moins
+   this.wavelengthVisual = this.velocityVisual / this.frequency;;
+
+        this.time = 0;
+        this.isRunning = false;
+        this.lastTS = 0;
+        this.rafId = null;
+
+        this.three = { scene:null, camera:null, renderer:null, mesh:null, vibrator:null, buoy:null, angleX:0.5, angleY:0.4, distance:150, dragging:false, lastMouse:{x:0,y:0} };
+        this.draggingBuoy = false;
+        this.pointer = new THREE.Vector2();
+        this.raycaster = new THREE.Raycaster();
+        this.dragPlane = new THREE.Plane(new THREE.Vector3(0,1,0), 0);
+
+        this.updateDisplay();
+        this._bindEvents();
+        this._init3D();
+        this._drawAll();
+      }
+
+      _bindEvents(){
+        this.playPauseBtn.addEventListener('click', ()=>this.togglePlayPause());
+        this.resetBtn.addEventListener('click', ()=>this.reset());
+        this.freqSlider.addEventListener('input', e=>{this.frequency=parseFloat(e.target.value);this._recomputeParams();this.updateDisplay();this._drawAll();});
+        this.ampSlider.addEventListener('input', e=>{this.amplitude=parseFloat(e.target.value);this.updateDisplay();this._drawAll();});
+        this.speedSlider.addEventListener('input', e=>{this.animationSpeed=parseFloat(e.target.value);this.updateDisplay();});
+
+        const canvas3D = this.canvas3D;
+        const updatePointer = ev=>{
+          const rect = canvas3D.getBoundingClientRect();
+          this.pointer.x = ((ev.clientX-rect.left)/rect.width)*2-1;
+          this.pointer.y = -((ev.clientY-rect.top)/rect.height)*2+1;
+        };
+
+        canvas3D.addEventListener('pointerdown', ev=>{
+          updatePointer(ev);
+          this.raycaster.setFromCamera(this.pointer, this.three.camera);
+          const hits = this.raycaster.intersectObjects([this.three.buoy].filter(b=>b), true);
+          if(hits.length>0){
+            this.draggingBuoy = true;
+            canvas3D.setPointerCapture(ev.pointerId);
+            return;
+          }
+          this.three.dragging = true;
+          this.three.lastMouse = {x:ev.clientX, y:ev.clientY};
+          canvas3D.setPointerCapture(ev.pointerId);
+        });
+
+        canvas3D.addEventListener('pointerup', ev=>{
+          this.draggingBuoy = false;
+          this.three.dragging = false;
+          try{canvas3D.releasePointerCapture(ev.pointerId);}catch(e){}
+        });
+
+        canvas3D.addEventListener('pointermove', ev=>{
+          updatePointer(ev);
+          if(this.draggingBuoy && this.three.buoy){
+            this.raycaster.setFromCamera(this.pointer, this.three.camera);
+            const hitPoint = new THREE.Vector3();
+            if(this.raycaster.ray.intersectPlane(this.dragPlane, hitPoint)){
+              const half = 100-2;
+              const x = Math.max(-half, Math.min(half, hitPoint.x));
+              const z = Math.max(-half, Math.min(half, hitPoint.z));
+              this.three.buoy.position.set(x, this._heightAt(x,z)+1.2, z);
+            }
+            return;
+          }
+          if(this.three.dragging){
+            const dx = ev.clientX - this.three.lastMouse.x;
+            const dy = ev.clientY - this.three.lastMouse.y;
+            this.three.angleY += dx*0.005;
+            this.three.angleX += dy*0.005;
+            this.three.angleX = clamp(this.three.angleX,-1.2,1.2);
+            this.three.lastMouse={x:ev.clientX,y:ev.clientY};
+          }
+        }, {passive:false});
+
+        canvas3D.addEventListener('wheel', ev=>{ev.preventDefault();this.three.distance+=ev.deltaY*0.2;this.three.distance=clamp(this.three.distance,40,600);},{passive:false});
+
+        window.addEventListener('resize', ()=>this._onResize());
+
+        document.getElementById('toggleBuoy').addEventListener('click', ()=>{
+          if(this.three.buoy){
+            this.three.buoy.visible=!this.three.buoy.visible;
+            document.getElementById('toggleBuoy').textContent = this.three.buoy.visible ? 'Cacher la bouée' : 'Afficher la bouée';
+          }
+        });
+      }
+
+      _recomputeParams(){this.wavelength=this.velocity/this.frequency;this.period=1/this.frequency;}
+      updateDisplay(){
+        this.freqVal.textContent=`${this.frequency.toFixed(1)} Hz`;
+        this.ampVal.textContent=`${this.amplitude.toFixed(1)} mm`;
+       // this.speedVal.textContent=`${this.animationSpeed.toFixed(1)}x`;
+        this.periodVal.textContent=`${this.period.toFixed(2)} s`;
+        this.wavelengthVal.textContent=`${this.wavelength.toFixed(1)} cm`;
+      }
+
+      togglePlayPause(){this.isRunning?this.pause():this.play();}
+      play(){if(this.isRunning) return;this.isRunning=true;this.playPauseBtn.textContent='⏸ Pause';this.lastTS=performance.now();this._tick();}
+      pause(){this.isRunning=false;this.playPauseBtn.textContent='▶ Démarrer';if(this.rafId){cancelAnimationFrame(this.rafId);this.rafId=null;}}
+      reset(){this.time=0;this.isRunning=false;this.playPauseBtn.textContent='▶ Démarrer';if(this.rafId){cancelAnimationFrame(this.rafId);this.rafId=null;}this._drawAll();}
+
+      _onResize(){const rect3=this.canvas3D.getBoundingClientRect();this.canvas3D.width=Math.floor(rect3.width*devicePixelRatio);this.canvas3D.height=Math.floor(rect3.height*devicePixelRatio);if(this.three.renderer){this.three.renderer.setSize(this.canvas3D.width,this.canvas3D.height,false);this.three.camera.aspect=this.canvas3D.width/this.canvas3D.height;this.three.camera.updateProjectionMatrix();}this._drawAll();}
+
+      _init3D(){
+        const scene=new THREE.Scene();
+        scene.background=new THREE.Color(0x87CEEB);
+        const aspect=this.canvas3D.width/this.canvas3D.height||1.6;
+        const camera=new THREE.PerspectiveCamera(40,aspect,0.1,2000);
+        camera.position.set(0,120,this.three.distance);
+        const renderer=new THREE.WebGLRenderer({canvas:this.canvas3D,antialias:true});
+        renderer.setPixelRatio(devicePixelRatio);
+        renderer.setSize(this.canvas3D.width,this.canvas3D.height,false);
+        renderer.shadowMap.enabled=true;
+
+        const amb=new THREE.AmbientLight(0xffffff,0.6);scene.add(amb);
+        const dir=new THREE.DirectionalLight(0xffffff,0.9);dir.position.set(50,200,100);dir.castShadow=true;scene.add(dir);
+
+        const size=200,seg=120;
+        const geom=new THREE.PlaneGeometry(size,size,seg,seg);
+        geom.rotateX(-Math.PI/2);
+        const mat=new THREE.MeshPhongMaterial({color:0x0a5d8f,shininess:80,transparent:true,opacity:0.95,side:THREE.DoubleSide});
+        const mesh=new THREE.Mesh(geom,mat);
+        mesh.receiveShadow=true;scene.add(mesh);
+
+        const vibGeo=new THREE.CylinderGeometry(1.1,1.1,4,6);
+        const vibMat=new THREE.MeshPhongMaterial({color:0xff4444});
+        const vibrator=new THREE.Mesh(vibGeo,vibMat);
+        vibrator.position.set(0,3,0);
+        scene.add(vibrator);
+
+        // Bouée
+        const buoyGeo=new THREE.SphereGeometry(2.5,24,16);
+        const buoyMat=new THREE.MeshPhongMaterial({color:0xffffff,emissive:0x112244});
+        const buoy=new THREE.Mesh(buoyGeo,buoyMat);
+        buoy.castShadow=true;buoy.position.set(15,3,-10);buoy.visible=false;
+        scene.add(buoy);
+
+        this.three.scene=scene;
+        this.three.camera=camera;
+        this.three.renderer=renderer;
+        this.three.mesh=mesh;
+        this.three.vibrator=vibrator;
+        this.three.buoy=buoy;
+
+        this._update3DVertices();
+      }
+
+      _heightAt(x,z){
+        const ampScale=0.2*(this.amplitude/5.0);
+        const dist=Math.sqrt(x*x+z*z);
+        const distanceCm=dist*1.5;
+        const travelTime=distanceCm/this.velocityVisual;
+        const phase=2*Math.PI*this.frequency*(this.time-travelTime);
+        return Math.sin(phase)*this.amplitude*ampScale;
+      }
+
+      _update3DVertices(){const geom=this.three.mesh.geometry;const pos=geom.attributes.position;const count=pos.count;const ampScale=0.2*(this.amplitude/5.0);for(let i=0;i<count;i++){const x=pos.getX(i);const z=pos.getZ(i);const dist=Math.sqrt(x*x+z*z);const distanceCm=dist*1.5;const travelTime=distanceCm/this.velocityVisual;const phase=2*Math.PI*this.frequency*(this.time-travelTime);const y=Math.sin(phase)*this.amplitude*ampScale;pos.setY(i,y);}pos.needsUpdate=true;geom.computeVertexNormals();}
+
+      _update3DVibrator(){if(!this.three.vibrator) return; if(this.isRunning){const phase=2*Math.PI*this.frequency*this.time;const offset=Math.sin(phase)*(this.amplitude*0.08);this.three.vibrator.position.y=3+offset;}}
+
+      _render3D(){
+        const cam=this.three.camera;const aX=this.three.angleX,aY=this.three.angleY,d=this.three.distance;
+        cam.position.x=Math.sin(aY)*Math.cos(aX)*d;
+        cam.position.y=Math.sin(aX)*d;
+        cam.position.z=Math.cos(aY)*Math.cos(aX)*d;
+        cam.lookAt(0,0,0);
+
+        this._update3DVertices();
+        this._update3DVibrator();
+
+        if(this.three.buoy && this.three.buoy.visible && !this.draggingBuoy){
+          const x=this.three.buoy.position.x;
+          const z=this.three.buoy.position.z;
+          this.three.buoy.position.y=this._heightAt(x,z)+1.2;
+        }
+
+        this.three.renderer.render(this.three.scene,cam);
+      }
+
+      _tick(){if(!this.isRunning) return;const now=performance.now();const dt=(now-this.lastTS)/1000||0;this.lastTS=now;this.time+=dt*this.animationSpeed;this._drawAll();this._render3D();this.rafId=requestAnimationFrame(()=>this._tick());}
+      _drawAll(){this._render3D();}
+    }
+
+    window.addEventListener('DOMContentLoaded',()=>{document.getElementById('canvas3D').style.display='block';window.sim=new WaveSimulation();});
+  })();
+  </script>
+</body>
+</html>
